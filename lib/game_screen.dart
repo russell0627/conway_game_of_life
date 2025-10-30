@@ -1,3 +1,4 @@
+import 'package:conway_game_of_life/evolution_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'game_controller.dart';
@@ -25,6 +26,15 @@ class GameScreen extends ConsumerWidget {
             icon: Icon(followPattern ? Icons.location_searching : Icons.location_disabled),
             tooltip: 'Follow Pattern',
             onPressed: () => ref.read(gameControllerProvider.notifier).toggleFollowPattern(),
+          ),
+          IconButton(
+            icon: const Icon(Icons.biotech),
+            tooltip: 'Evolution Chamber',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const EvolutionScreen()),
+              );
+            },
           ),
         ],
       ),
