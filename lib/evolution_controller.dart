@@ -11,8 +11,6 @@ import 'point.dart';
 
 part 'evolution_controller.g.dart';
 
-const int testGenerations = 200;
-
 // Top-level function for the isolate
 Future<Map<String, dynamic>> _runEvolutionLoop(Map<String, dynamic> args) async {
   final SendPort sendPort = args['sendPort'];
@@ -23,8 +21,10 @@ Future<Map<String, dynamic>> _runEvolutionLoop(Map<String, dynamic> args) async 
   final int totalGenerations = args['totalGenerations'];
   final double adaptationRate = args['adaptationRate'];
   final int populationSize = args['populationSize'];
-  final int maxCellCount = args['maxCellCount']; // Get maxCellCount from args
-  final int evolutionCycles = totalGenerations ~/ (populationSize * testGenerations);
+  final int maxCellCount = args['maxCellCount'];
+  final int testGenerationsPerPattern = args['testGenerationsPerPattern'];
+
+  final int evolutionCycles = totalGenerations ~/ (populationSize * testGenerationsPerPattern);
 
   // Pass settings to the isolate
   final bool useMassConservation = args['useMassConservation'];
@@ -44,7 +44,8 @@ Future<Map<String, dynamic>> _runEvolutionLoop(Map<String, dynamic> args) async 
         useMassConservation,
         usePurityCheck,
         useSizeIncentive,
-        maxCellCount, // Pass maxCellCount to _testPattern
+        maxCellCount,
+        testGenerationsPerPattern,
       );
       fitnesses.add(MapEntry(individual, fitness));
     }
@@ -98,7 +99,8 @@ Future<double> _testPattern(
   bool useMassConservation,
   bool usePurityCheck,
   bool useSizeIncentive,
-  int maxCellCount, // New parameter
+  int maxCellCount,
+  int testGenerations,
 ) async {
   if (pattern.isEmpty) return 0.0;
 
@@ -297,12 +299,10 @@ List<int> _getBounds(Set<Point> cells) {
 
 Point _getCenterOfMass(Set<Point> cells) {
   if (cells.isEmpty) return const Point(0, 0);
-  double avgX = 0, avgY = 0;
-  for (final cell in cells) {
-    avgX += cell.x;
-    avgY += cell.y;
-  }
-  return Point((avgX / cells.length).round(), (avgY / cells.length).round());
+  final bounds = _getBounds(cells);
+  final centerX = (bounds[0] + bounds[1]) / 2;
+  final centerY = (bounds[2] + bounds[3]) / 2;
+  return Point(centerX.round(), centerY.round());
 }
 
 double _calculateDistance(Point p1, Point p2) {
@@ -330,6 +330,10 @@ class EvolutionController extends _$EvolutionController {
 
   void setMaxCellCount(int count) {
     state = state.copyWith(maxCellCount: count, activePreset: EvolutionPreset.custom);
+  }
+
+  void setTestGenerationsPerPattern(int generations) {
+    state = state.copyWith(testGenerationsPerPattern: generations, activePreset: EvolutionPreset.custom);
   }
 
   void setUseMassConservation(bool value) {
@@ -368,6 +372,7 @@ class EvolutionController extends _$EvolutionController {
         adaptationRate: 1.2,
         populationSize: 30,
         maxCellCount: 200,
+        testGenerationsPerPattern: 400, // Increased for better accuracy
         activePreset: preset,
       );
     } else if (preset == EvolutionPreset.creativeExplorer) {
@@ -380,6 +385,7 @@ class EvolutionController extends _$EvolutionController {
         adaptationRate: 2.0,
         populationSize: 20,
         maxCellCount: 500,
+        testGenerationsPerPattern: 100, // Reduced for faster exploration
         activePreset: preset,
       );
     }
@@ -420,6 +426,7 @@ class EvolutionController extends _$EvolutionController {
       'adaptationRate': state.adaptationRate,
       'populationSize': state.populationSize,
       'maxCellCount': state.maxCellCount,
+      'testGenerationsPerPattern': state.testGenerationsPerPattern,
     });
 
     receivePort.close();

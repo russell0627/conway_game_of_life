@@ -126,6 +126,16 @@ class EvolutionScreen extends ConsumerWidget {
           onChanged: (value) => evolutionController.setMaxCellCount(value.toInt()),
         ),
         const SizedBox(height: 16),
+        Text('Test Generations per Pattern: ${evolutionState.testGenerationsPerPattern}'),
+        Slider(
+          value: evolutionState.testGenerationsPerPattern.toDouble(),
+          min: 50,
+          max: 1000,
+          divisions: 19,
+          label: evolutionState.testGenerationsPerPattern.toString(),
+          onChanged: (value) => evolutionController.setTestGenerationsPerPattern(value.toInt()),
+        ),
+        const SizedBox(height: 16),
         Text('Adaptation Rate: ${evolutionState.adaptationRate.toStringAsFixed(1)}x'),
         Slider(
           value: evolutionState.adaptationRate,

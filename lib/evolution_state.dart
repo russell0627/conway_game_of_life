@@ -46,6 +46,7 @@ class EvolutionState {
   final EvolutionPreset activePreset;
   final int populationSize;
   final int maxCellCount;
+  final int testGenerationsPerPattern;
 
   EvolutionState({
     this.population = const [],
@@ -66,6 +67,7 @@ class EvolutionState {
     this.activePreset = EvolutionPreset.custom,
     this.populationSize = 20,
     this.maxCellCount = 200,
+    this.testGenerationsPerPattern = 200,
   });
 
   EvolutionState copyWith({
@@ -87,6 +89,7 @@ class EvolutionState {
     EvolutionPreset? activePreset,
     int? populationSize,
     int? maxCellCount,
+    int? testGenerationsPerPattern,
   }) {
     return EvolutionState(
       population: population ?? this.population,
@@ -107,6 +110,7 @@ class EvolutionState {
       activePreset: activePreset ?? this.activePreset,
       populationSize: populationSize ?? this.populationSize,
       maxCellCount: maxCellCount ?? this.maxCellCount,
+      testGenerationsPerPattern: testGenerationsPerPattern ?? this.testGenerationsPerPattern,
     );
   }
 }
