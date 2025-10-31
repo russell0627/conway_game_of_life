@@ -12,6 +12,8 @@ class GameState {
   final Point cameraOffset;
   final bool followPattern;
   final SimulationStats? stats;
+  final double zoomLevel;
+  final List<int> populationHistory;
 
   GameState({
     required this.liveCells,
@@ -21,6 +23,8 @@ class GameState {
     this.cameraOffset = const Point(0, 0),
     this.followPattern = true,
     this.stats,
+    this.zoomLevel = 1.0,
+    this.populationHistory = const [],
   });
 
   GameState copyWith({
@@ -31,6 +35,8 @@ class GameState {
     Point? cameraOffset,
     bool? followPattern,
     SimulationStats? stats,
+    double? zoomLevel,
+    List<int>? populationHistory,
   }) {
     return GameState(
       liveCells: liveCells ?? this.liveCells,
@@ -40,6 +46,8 @@ class GameState {
       cameraOffset: cameraOffset ?? this.cameraOffset,
       followPattern: followPattern ?? this.followPattern,
       stats: stats ?? this.stats,
+      zoomLevel: zoomLevel ?? this.zoomLevel,
+      populationHistory: populationHistory ?? this.populationHistory,
     );
   }
 }

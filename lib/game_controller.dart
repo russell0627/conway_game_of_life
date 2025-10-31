@@ -16,6 +16,7 @@ part 'game_controller.g.dart';
 class GameController extends _$GameController {
   Timer? _timer;
   List<Set<Point>> _history = [];
+  double _zoomOnStart = 1.0;
 
   @override
   GameState build() {
@@ -23,6 +24,16 @@ class GameController extends _$GameController {
       _timer?.cancel();
     });
     return GameState(liveCells: {}, generation: 0, isRunning: false);
+  }
+
+  void onZoomStart() {
+    _zoomOnStart = state.zoomLevel;
+  }
+
+  void onZoomUpdate(double scale) {
+    final newZoom = _zoomOnStart * scale;
+    // Clamp zoom level between 0.25 and 4.0
+    state = state.copyWith(zoomLevel: newZoom.clamp(0.25, 4.0));
   }
 
   void toggleCell(Point point) {
@@ -90,7 +101,18 @@ class GameController extends _$GameController {
       }
     });
 
-    state = state.copyWith(liveCells: nextLiveCells, generation: state.generation + 1);
+    final newHistory = List<int>.from(state.populationHistory);
+    newHistory.add(nextLiveCells.length);
+    if (newHistory.length > 100) {
+      newHistory.removeAt(0);
+    }
+
+    state = state.copyWith(
+      liveCells: nextLiveCells,
+      generation: state.generation + 1,
+      populationHistory: newHistory,
+    );
+
     if (state.followPattern) {
       _centerOnPattern();
     }
@@ -166,13 +188,22 @@ class GameController extends _$GameController {
 
   Point _getCenterOfMass(Set<Point> cells) {
     if (cells.isEmpty) return const Point(0, 0);
-    double avgX = 0;
-    double avgY = 0;
-    for (final cell in cells) {
-      avgX += cell.x;
-      avgY += cell.y;
+    final bounds = _getBounds(cells);
+    final centerX = (bounds[0] + bounds[1]) / 2;
+    final centerY = (bounds[2] + bounds[3]) / 2;
+    return Point(centerX.round(), centerY.round());
+  }
+
+  List<int> _getBounds(Set<Point> cells) {
+    if (cells.isEmpty) return [0, 0, 0, 0];
+    int minX = cells.first.x, maxX = cells.first.x, minY = cells.first.y, maxY = cells.first.y;
+    for (var cell in cells) {
+      if (cell.x < minX) minX = cell.x;
+      if (cell.x > maxX) maxX = cell.x;
+      if (cell.y < minY) minY = cell.y;
+      if (cell.y > maxY) maxY = cell.y;
     }
-    return Point((avgX / cells.length).round(), (avgY / cells.length).round());
+    return [minX, maxX, minY, maxY];
   }
 
   double _calculateDistance(Point p1, Point p2) {

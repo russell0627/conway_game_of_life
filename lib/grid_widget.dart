@@ -10,14 +10,17 @@ class GridWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final gameState = ref.watch(gameControllerProvider);
-    const double cellSize = 20.0;
+    final gameController = ref.read(gameControllerProvider.notifier);
+    final double cellSize = 20.0 * gameState.zoomLevel;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         return GestureDetector(
-          onPanUpdate: (details) {
+          onScaleStart: (details) => gameController.onZoomStart(),
+          onScaleUpdate: (details) {
+            gameController.onZoomUpdate(details.scale);
             // Pan the camera by converting screen delta to world delta
-            final delta = Point(-(details.delta.dx / cellSize).round(), -(details.delta.dy / cellSize).round());
+            final delta = Point(-(details.focalPointDelta.dx / cellSize).round(), -(details.focalPointDelta.dy / cellSize).round());
             if (delta.x != 0 || delta.y != 0) {
               ref.read(gameControllerProvider.notifier).panCamera(delta);
             }

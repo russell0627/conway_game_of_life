@@ -1,4 +1,5 @@
 import 'package:conway_game_of_life/evolution_screen.dart';
+import 'package:conway_game_of_life/population_graph.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'game_controller.dart';
@@ -47,9 +48,11 @@ class GameScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(8.0),
             child: Column(
               children: [
-                if (stats == null)
-                  _buildSetupUI(ref, isRunning)
-                else
+                if (stats == null) ...[
+                  PopulationGraph(history: gameState.populationHistory),
+                  const SizedBox(height: 8),
+                  _buildSetupUI(context, ref, isRunning),
+                ] else
                   _buildChallengeUI(ref, stats, isRunning),
                 Slider(
                   value: speed,
@@ -65,7 +68,7 @@ class GameScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSetupUI(WidgetRef ref, bool isRunning) {
+  Widget _buildSetupUI(BuildContext context, WidgetRef ref, bool isRunning) {
     return Column(
       children: [
         DropdownButton<String>(
@@ -93,35 +96,56 @@ class GameScreen extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            ElevatedButton(
-              onPressed: () => ref.read(gameControllerProvider.notifier).togglePlayPause(),
-              child: Text(isRunning ? 'Pause' : 'Play'),
+            Tooltip(
+              message: isRunning ? 'Pause' : 'Play',
+              child: IconButton(
+                icon: Icon(isRunning ? Icons.pause : Icons.play_arrow),
+                onPressed: () => ref.read(gameControllerProvider.notifier).togglePlayPause(),
+              ),
             ),
-            ElevatedButton(
-              onPressed: isRunning ? null : () => ref.read(gameControllerProvider.notifier).tick(),
-              child: const Text('Step'),
+            Tooltip(
+              message: 'Next Generation',
+              child: IconButton(
+                icon: const Icon(Icons.skip_next),
+                onPressed: isRunning ? null : () => ref.read(gameControllerProvider.notifier).tick(),
+              ),
             ),
-            ElevatedButton(
-              onPressed: () => ref.read(gameControllerProvider.notifier).reset(),
-              child: const Text('Reset'),
+            Tooltip(
+              message: 'Reset',
+              child: IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: () => ref.read(gameControllerProvider.notifier).reset(),
+              ),
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            ElevatedButton(
-              onPressed: isRunning ? null : () => ref.read(gameControllerProvider.notifier).savePattern(),
-              child: const Text('Save'),
+            const VerticalDivider(),
+            Tooltip(
+              message: 'Save Pattern',
+              child: IconButton(
+                icon: const Icon(Icons.save),
+                onPressed: isRunning
+                    ? null
+                    : () {
+                        ref.read(gameControllerProvider.notifier).savePattern();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Pattern Saved!')),
+                        );
+                      },
+              ),
             ),
-            ElevatedButton(
-              onPressed: isRunning ? null : () => ref.read(gameControllerProvider.notifier).loadSavedPattern(),
-              child: const Text('Load'),
+            Tooltip(
+              message: 'Load Pattern',
+              child: IconButton(
+                icon: const Icon(Icons.folder_open),
+                onPressed: isRunning ? null : () => ref.read(gameControllerProvider.notifier).loadSavedPattern(),
+              ),
             ),
-            ElevatedButton(
-              onPressed: isRunning ? null : () => ref.read(gameControllerProvider.notifier).startChallenge(),
-              child: const Text('Start Challenge'),
+            const VerticalDivider(),
+            Tooltip(
+              message: 'Start Challenge',
+              child: IconButton(
+                icon: const Icon(Icons.flag),
+                onPressed: isRunning ? null : () => ref.read(gameControllerProvider.notifier).startChallenge(),
+              ),
             ),
           ],
         ),
