@@ -13,79 +13,160 @@ class EvolutionScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final evolutionState = ref.watch(evolutionControllerProvider);
-    final gameController = ref.read(gameControllerProvider.notifier);
+    final evolutionController = ref.read(evolutionControllerProvider.notifier);
     final initialPattern = ref.watch(gameControllerProvider.select((state) => state.liveCells));
-
-    final double sliderValue = (evolutionState.totalEvolutionGenerations / 500000) - 1;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Evolution Chamber'),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Status: ${evolutionState.status.name}'),
-            Text('Evolution Generation: ${evolutionState.evolutionGeneration}'),
-            Text('Best Distance: ${evolutionState.bestDistance.toStringAsFixed(2)}'),
-            Text('Mutation Rate: ${(evolutionState.mutationRate * 100).toStringAsFixed(1)}%'),
-            const SizedBox(height: 20),
-            if (evolutionState.status == EvolutionStatus.running)
-              const CircularProgressIndicator()
-            else
-              Column(
-                children: [
-                  Text('Total Generations: ${evolutionState.totalEvolutionGenerations}'),
-                  Slider(
-                    value: sliderValue,
-                    min: 0,
-                    max: 3,
-                    divisions: 3,
-                    label: '${(sliderValue + 1) * 0.5}M',
-                    onChanged: (value) {
-                      final generations = ((value + 1) * 500000).toInt();
-                      ref.read(evolutionControllerProvider.notifier).setTotalGenerations(generations);
-                    },
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Status: ${evolutionState.status.name}'),
+                if (evolutionState.status == EvolutionStatus.running)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: LinearProgressIndicator(value: evolutionState.progress),
                   ),
+                Text('Evolution Generation: ${evolutionState.evolutionGeneration}'),
+                Text('Best Distance: ${evolutionState.currentBestDistance.toStringAsFixed(2)}'),
+                Text('Mutation Rate: ${(evolutionState.mutationRate * 100).toStringAsFixed(1)}%'),
+                const SizedBox(height: 20),
+                if (evolutionState.status != EvolutionStatus.running) ...[
                   ElevatedButton(
                     onPressed: initialPattern.isNotEmpty
-                        ? () {
-                            ref.read(evolutionControllerProvider.notifier).startEvolution(initialPattern);
-                          }
-                        : null, // Disable button if there's no initial pattern
+                        ? () => evolutionController.startEvolution(initialPattern)
+                        : null,
                     child: const Text('Start Evolution'),
                   ),
+                  const SizedBox(height: 20),
+                  DropdownButtonFormField<EvolutionPreset>(
+                    decoration: const InputDecoration(labelText: 'Evolution Preset'),
+                    value: evolutionState.activePreset,
+                    items: EvolutionPreset.values
+                        .map((p) => DropdownMenuItem(value: p, child: Text(p.name)))
+                        .toList(),
+                    onChanged: (val) => evolutionController.applyPreset(val!),
+                  ),
+                  ExpansionTile(
+                    title: const Text('Advanced Settings'),
+                    initiallyExpanded: evolutionState.activePreset == EvolutionPreset.custom,
+                    children: [
+                      _buildSettingsPanel(evolutionState, evolutionController),
+                    ],
+                  ),
                 ],
-              ),
-            const SizedBox(height: 20),
-            if (evolutionState.championPattern.isNotEmpty)
-              Column(
-                children: [
-                  const Text('Champion Pattern:'),
+                const SizedBox(height: 20),
+                if (evolutionState.bestPatternSoFar.isNotEmpty) ...[
+                  const Text('Best Pattern Found:'),
                   Container(
                     width: 100,
                     height: 100,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                    ),
+                    decoration: BoxDecoration(border: Border.all(color: Colors.grey)),
                     child: CustomPaint(
-                      painter: _PatternPainter(evolutionState.championPattern),
+                      painter: _PatternPainter(evolutionState.bestPatternSoFar),
                     ),
                   ),
                   ElevatedButton(
                     onPressed: () {
+                      final gameController = ref.read(gameControllerProvider.notifier);
                       gameController.reset();
-                      gameController.state = gameController.state.copyWith(liveCells: evolutionState.championPattern);
+                      gameController.state = gameController.state.copyWith(liveCells: evolutionState.bestPatternSoFar);
                       Navigator.of(context).pop();
                     },
-                    child: const Text('Load Champion'),
+                    child: const Text('Load Best Pattern'),
                   ),
                 ],
-              ),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSettingsPanel(EvolutionState evolutionState, EvolutionController evolutionController) {
+    return Column(
+      children: [
+        Text('Total Generations: ${evolutionState.totalEvolutionGenerations}'),
+        Slider(
+          value: (evolutionState.totalEvolutionGenerations / 500000) - 1,
+          min: 0,
+          max: 3,
+          divisions: 3,
+          label: '${((evolutionState.totalEvolutionGenerations / 500000) * 0.5).toStringAsFixed(1)}M',
+          onChanged: (value) {
+            final generations = ((value + 1) * 500000).toInt();
+            evolutionController.setTotalGenerations(generations);
+          },
+        ),
+        const SizedBox(height: 16),
+        Text('Population Size: ${evolutionState.populationSize}'),
+        Slider(
+          value: evolutionState.populationSize.toDouble(),
+          min: 10,
+          max: 50,
+          divisions: 4,
+          label: evolutionState.populationSize.toString(),
+          onChanged: (value) => evolutionController.setPopulationSize(value.toInt()),
+        ),
+        const SizedBox(height: 16),
+        Text('Max Cell Count: ${evolutionState.maxCellCount}'),
+        Slider(
+          value: evolutionState.maxCellCount.toDouble(),
+          min: 10,
+          max: 200,
+          divisions: 19,
+          label: evolutionState.maxCellCount.toString(),
+          onChanged: (value) => evolutionController.setMaxCellCount(value.toInt()),
+        ),
+        const SizedBox(height: 16),
+        Text('Adaptation Rate: ${evolutionState.adaptationRate.toStringAsFixed(1)}x'),
+        Slider(
+          value: evolutionState.adaptationRate,
+          min: 1.1,
+          max: 3.0,
+          divisions: 19,
+          label: '${evolutionState.adaptationRate.toStringAsFixed(1)}x',
+          onChanged: (value) => evolutionController.setAdaptationRate(value),
+        ),
+        CheckboxListTile(
+          title: const Text('Use Mass Conservation'),
+          value: evolutionState.useMassConservation,
+          onChanged: (val) => evolutionController.setUseMassConservation(val!),
+        ),
+        CheckboxListTile(
+          title: const Text('Use Purity Check'),
+          value: evolutionState.usePurityCheck,
+          onChanged: (val) => evolutionController.setUsePurityCheck(val!),
+        ),
+        CheckboxListTile(
+          title: const Text('Use Size Incentive'),
+          value: evolutionState.useSizeIncentive,
+          onChanged: (val) => evolutionController.setUseSizeIncentive(val!),
+        ),
+        DropdownButtonFormField<MutationStrategy>(
+          decoration: const InputDecoration(labelText: 'Mutation Strategy'),
+          value: evolutionState.mutationStrategy,
+          items: MutationStrategy.values
+              .map((s) => DropdownMenuItem(value: s, child: Text(s.name)))
+              .toList(),
+          onChanged: (val) => evolutionController.setMutationStrategy(val!),
+        ),
+        DropdownButtonFormField<CrossoverStrategy>(
+          decoration: const InputDecoration(labelText: 'Crossover Strategy'),
+          value: evolutionState.crossoverStrategy,
+          items: CrossoverStrategy.values
+              .map((s) => DropdownMenuItem(value: s, child: Text(s.name)))
+              .toList(),
+          onChanged: (val) => evolutionController.setCrossoverStrategy(val!),
+        ),
+      ],
     );
   }
 }
