@@ -61,3 +61,10 @@ Mutation is how the algorithm introduces brand new, random ideas into the gene p
 
 -   **What it does:** This setting controls how many different patterns (organisms) are simulated and evolved in parallel during each generation of the evolutionary process.
 -   **Why use it:** A larger population introduces more genetic diversity, allowing the algorithm to explore a wider range of solutions and potentially avoid getting stuck in local optima. However, a larger population also means each evolutionary generation takes longer to compute. A smaller population is faster but might limit the algorithm's ability to find diverse or complex solutions.
+
+---
+
+## Max Cell Count: Preventing Runaway Growth
+
+-   **What it does:** This sets an upper limit on the number of live cells any single pattern can have during its test run. If a pattern exceeds this count, it is immediately disqualified and given a score of zero.
+-   **Why use it:** This is a crucial safety mechanism. Some random mutations can cause patterns to explode into a massive, chaotic number of cells, which can severely slow down or even freeze the simulation. By setting a reasonable cap, you prevent the algorithm from wasting time and computational power on these unproductive, runaway patterns. It helps focus the evolution on finding efficient and manageable patterns.
